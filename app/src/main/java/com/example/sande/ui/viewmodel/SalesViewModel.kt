@@ -62,7 +62,14 @@ class SalesViewModel(
         if (items.isEmpty()) return
 
         val receiptNumber = saleHeaderRepository.generateReceiptNumber("SAL", "DEV")
-        val saleHeaderId = movementRepository.recordSaleAtomic(items, receiptNumber, "local")
+        val saleLineItems = items.map { line ->
+            com.example.sande.data.repository.SaleLineItem(
+                productId = line.productId,
+                quantity = line.quantity,
+                unitPriceCents = line.unitPriceCents
+            )
+        }
+        movementRepository.recordSaleAtomic(saleLineItems, receiptNumber, "local")
 
         _cart.value = emptyList()
     }

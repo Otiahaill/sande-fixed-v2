@@ -10,6 +10,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import java.util.UUID
 
+/**
+ * Simple data class for sale line items in the repository layer (no UI dependencies).
+ */
+data class SaleLineItem(
+    val productId: String,
+    val quantity: Long,
+    val unitPriceCents: Long
+)
 
 class MovementRepository constructor(
     private val database: AppDatabase,
@@ -51,7 +59,7 @@ class MovementRepository constructor(
      */
     @Transaction
     suspend fun recordSaleAtomic(
-        items: List<com.example.sande.ui.viewmodel.SalesViewModel.CartItem>,
+        items: List<SaleLineItem>,
         receiptNumber: String,
         deviceId: String
     ): String {
