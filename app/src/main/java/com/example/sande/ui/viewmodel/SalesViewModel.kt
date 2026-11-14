@@ -51,6 +51,17 @@ class SalesViewModel(
         _cart.update { items -> items.filterNot { it.productId == productId } }
     }
 
+    /**
+     * Override the unit price for a cart item line (price override control).
+     */
+    fun overridePrice(productId: String, newPriceCents: Long) {
+        _cart.update { items ->
+            items.map { item ->
+                if (item.productId == productId) item.copy(unitPriceCents = newPriceCents) else item
+            }
+        }
+    }
+
     fun subtotalCents(items: List<CartItem>): Long = items.sumOf { it.quantity * it.unitPriceCents }
 
     /**
@@ -71,6 +82,21 @@ class SalesViewModel(
         }
         movementRepository.recordSaleAtomic(saleLineItems, receiptNumber, "local")
 
+        _cart.value = emptyList()
+    }
+
+    /**
+     * Voids a previously recorded sale by creating VOID movements for each line item.
+     * Clears the cart on success.
+     */
+    suspend fun voidSale(saleItems: List<CartItem>, referenceId: String, deviceId: String = "local") {
+        movementRepository.recordVoid(
+            originalMovementId = referenceId,
+            productId = saleItems.first().productId,
+            quantity = saleItems.sumOf { it.quantity },
+            referenceId = referenceId,
+            deviceId = deviceId
+        )
         _cart.value = emptyList()
     }
 }
