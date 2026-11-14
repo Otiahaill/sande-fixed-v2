@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.sande.data.entities.Product
 import com.example.sande.data.repository.MovementRepository
 import com.example.sande.data.repository.ProductRepository
+import com.example.sande.data.repository.SaleHeaderRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +17,8 @@ import java.util.UUID
 
 class SalesViewModel(
     private val movementRepository: MovementRepository,
-    productRepository: ProductRepository
+    productRepository: ProductRepository,
+    private val saleHeaderRepository: SaleHeaderRepository
 ) : ViewModel() {
 
     data class CartItem(
@@ -52,24 +54,16 @@ class SalesViewModel(
     fun subtotalCents(items: List<CartItem>): Long = items.sumOf { it.quantity * it.unitPriceCents }
 
     /**
-     * PLACEHOLDER: writes one SALE movement per line. NOT atomic and no sale header yet.
-     * The blueprint (M6) requires one Room transaction for sale + lines + movements + outbox row.
+     * Atomically records a complete sale: creates SaleHeader + all SALE movements + Outbox entry
+     * in one Room transaction. Clears the cart on success.
      */
-    fun recordSale() {
+    suspend fun recordSale() {
         val items = _cart.value
         if (items.isEmpty()) return
-        val saleId = UUID.randomUUID().toString()
-        viewModelScope.launch {
-            items.forEach { line ->
-                movementRepository.recordSale(
-                    productId = line.productId,
-                    quantity = line.quantity,
-                    unitPriceCents = line.unitPriceCents,
-                    referenceId = saleId,
-                    deviceId = "local"
-                )
-            }
-            _cart.value = emptyList()
-        }
+
+        val receiptNumber = saleHeaderRepository.generateReceiptNumber("SAL", "DEV")
+        val saleHeaderId = movementRepository.recordSaleAtomic(items, receiptNumber, "local")
+
+        _cart.value = emptyList()
     }
 }

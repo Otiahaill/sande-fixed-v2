@@ -13,6 +13,7 @@ import com.example.sande.data.entities.Member
 import com.example.sande.data.entities.Movement
 import com.example.sande.data.entities.Outbox
 import com.example.sande.data.entities.Product
+import com.example.sande.data.entities.SaleHeader
 
 @Database(
     entities = [
@@ -20,9 +21,10 @@ import com.example.sande.data.entities.Product
         Member::class,
         Product::class,
         Movement::class,
-        Outbox::class
+        Outbox::class,
+        SaleHeader::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -30,6 +32,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun movementDao(): MovementDao
     abstract fun outboxDao(): OutboxDao
     abstract fun memberDao(): MemberDao
+    abstract fun saleHeaderDao(): SaleHeaderDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null

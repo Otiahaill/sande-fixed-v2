@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -32,15 +33,23 @@ import com.example.sande.ui.formatKes
 import com.example.sande.ui.theme.SandeShape
 import com.example.sande.ui.viewModelFactoryOf
 import com.example.sande.ui.viewmodel.SalesViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun SalesScreen(modifier: Modifier = Modifier) {
     val app = LocalContext.current.applicationContext as SandeApplication
     val vm: SalesViewModel = viewModel(
-        factory = viewModelFactoryOf { SalesViewModel(app.movementRepository, app.productRepository) }
+        factory = viewModelFactoryOf {
+            SalesViewModel(
+                app.movementRepository,
+                app.productRepository,
+                app.saleHeaderRepository
+            )
+        }
     )
     val products by vm.products.collectAsState()
     val cart by vm.cart.collectAsState()
+    val scope = rememberCoroutineScope()
 
     Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
         Text("Sales", style = MaterialTheme.typography.headlineSmall)
@@ -109,7 +118,7 @@ fun SalesScreen(modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("Total KES ${formatKes(vm.subtotalCents(cart))}", style = MaterialTheme.typography.titleMedium)
-            Button(onClick = { vm.recordSale() }, enabled = cart.isNotEmpty()) { Text("Record sale") }
+            Button(onClick = { scope.launch { vm.recordSale() } }, enabled = cart.isNotEmpty()) { Text("Record sale") }
         }
     }
 }
