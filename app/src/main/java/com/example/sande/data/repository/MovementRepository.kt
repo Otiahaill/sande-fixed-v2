@@ -3,8 +3,11 @@ package com.example.sande.data.repository
 import androidx.room.Transaction
 import com.example.sande.data.db.AppDatabase
 import com.example.sande.data.daos.MovementDao
+import com.example.sande.data.daos.SaleHeaderDao
+import com.example.sande.data.daos.OutboxDao
 import com.example.sande.data.entities.Movement
 import com.example.sande.data.entities.MovementType
+import com.example.sande.data.entities.Outbox
 import com.example.sande.data.entities.SaleHeader
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -21,19 +24,19 @@ data class SaleLineItem(
 
 class MovementRepository constructor(
     private val database: AppDatabase,
-    private val productRepository: ProductRepository,
-    private val saleHeaderRepository: SaleHeaderRepository,
-    private val outboxRepository: OutboxRepository
+    private val productRepository: ProductRepository
 ) {
-    private val dao: MovementDao = database.movementDao()
+    private val movementDao: MovementDao = database.movementDao()
+    private val saleHeaderDao: SaleHeaderDao = database.saleHeaderDao()
+    private val outboxDao: OutboxDao = database.outboxDao()
 
-    val getAll: Flow<List<Movement>> = dao.getAll()
+    val getAll: Flow<List<Movement>> = movementDao.getAll()
 
-    fun getByProduct(productId: String): Flow<List<Movement>> = dao.getByProduct(productId)
+    fun getByProduct(productId: String): Flow<List<Movement>> = movementDao.getByProduct(productId)
 
-    suspend fun getStockBalance(productId: String): Long = dao.getStockBalance(productId)
+    suspend fun getStockBalance(productId: String): Long = movementDao.getStockBalance(productId)
 
-    fun getUnsynced(): Flow<List<Movement>> = dao.getUnsynced()
+    fun getUnsynced(): Flow<List<Movement>> = movementDao.getUnsynced()
 
     suspend fun recordSale(productId: String, quantity: Long, unitPriceCents: Long?, referenceId: String?, deviceId: String): String {
         val id = UUID.randomUUID().toString()
@@ -47,7 +50,7 @@ class MovementRepository constructor(
             deviceId = deviceId,
             synced = false
         )
-        dao.insert(movement)
+        movementDao.insert(movement)
         return id
     }
 
@@ -72,11 +75,11 @@ class MovementRepository constructor(
             deviceId = deviceId,
             synced = false
         )
-        saleHeaderRepository.insert(saleHeader)
+        saleHeaderDao.insert(saleHeader)
 
         val referenceId = saleHeaderId
         items.forEach { line ->
-            dao.insert(
+            movementDao.insert(
                 Movement(
                     id = UUID.randomUUID().toString(),
                     productId = line.productId,
@@ -101,7 +104,16 @@ class MovementRepository constructor(
                 "items": ${items.map { """{"productId":"${it.productId}","quantity":${it.quantity},"unitPriceCents":${it.unitPriceCents}}""" }.joinToString(",")}
             }
         """.trimIndent()
-        outboxRepository.insert("SALE", saleHeaderId, "CREATE", outboxPayload)
+        outboxDao.insert(
+            Outbox(
+                id = UUID.randomUUID().toString(),
+                entityType = "SALE",
+                entityId = saleHeaderId,
+                operation = "CREATE",
+                payload = outboxPayload,
+                synced = false
+            )
+        )
 
         return saleHeaderId
     }
@@ -118,7 +130,7 @@ class MovementRepository constructor(
             deviceId = deviceId,
             synced = false
         )
-        dao.insert(movement)
+        movementDao.insert(movement)
         return id
     }
 
@@ -134,7 +146,7 @@ class MovementRepository constructor(
             deviceId = deviceId,
             synced = false
         )
-        dao.insert(movement)
+        movementDao.insert(movement)
         return id
     }
 
@@ -150,9 +162,9 @@ class MovementRepository constructor(
             deviceId = deviceId,
             synced = false
         )
-        dao.insert(movement)
+        movementDao.insert(movement)
         return id
     }
 
-    suspend fun markSynced(ids: List<String>) = dao.markSynced(ids)
+    suspend fun markSynced(ids: List<String>) = movementDao.markSynced(ids)
 }
