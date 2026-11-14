@@ -15,9 +15,8 @@
     <color name="ios_red">#FF3B30</color>
     <color name="ios_orange">#FF9500</color>
     <color name="ios_yellow">#FFCC00</color>
-    <color name="ios_purple">#AF52DE</color>
     <color name="ios_pink">#FF2D55</color>
-    <color name="ios_teal">#5AC8FA</color>
+<color name="ios_teal">#5AC8FA</color>
 
     <!-- Grayscale -->
     <color name="ios_label_primary">#1C1C1E</color>
